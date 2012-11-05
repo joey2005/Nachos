@@ -154,7 +154,10 @@ public class PriorityScheduler extends Scheduler {
 			
 			ThreadState threadState;
 			if (owner != null) {
-				owner.effectivePriority = -1;
+				if (this.transferPriority) {
+					owner.effectivePriority = -1;
+				}
+				owner.waitList.remove(this);
 			}
 			if ((threadState = pickNextThread()) == null) {
 				owner = null;
@@ -251,6 +254,14 @@ public class PriorityScheduler extends Scheduler {
 			if (waitList == null) {
 				return effectivePriority;
 			}
+			for (PriorityQueue waitQueue : waitList) {
+				for (Iterator it = waitQueue.waitQueue.iterator(); it.hasNext(); ) {
+					ThreadState threadState = getThreadState((KThread)it.next());
+					if (threadState.getEffectivePriority() > effectivePriority) {
+						effectivePriority = threadState.getEffectivePriority();
+					}
+				}
+			}
 			return effectivePriority;
 		}
 
@@ -315,7 +326,7 @@ public class PriorityScheduler extends Scheduler {
 			waitQueue.waitQueue.remove(this.thread);
 			waitQueue.owner = this;
 			waitQueue.owner.effectivePriority = -1;
-			waitQueue.owner.waitList = waitQueue;
+			waitQueue.owner.waitList.add(waitQueue);
 			waitQueue.owner.belong = waitQueue;
 			Machine.interrupt().setStatus(intStatus);
 		}
@@ -327,7 +338,7 @@ public class PriorityScheduler extends Scheduler {
 		
 		protected int effectivePriority = -1;// -1 stands for need to recalculate this value
 		
-		protected PriorityQueue waitList = null;
+		protected LinkedList<PriorityQueue> waitList = new LinkedList<PriorityQueue>();
 		protected PriorityQueue belong = null;
 	}
 }
