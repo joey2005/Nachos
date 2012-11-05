@@ -153,6 +153,9 @@ public class PriorityScheduler extends Scheduler {
 			// implement me
 			
 			ThreadState threadState;
+			if (owner != null) {
+				owner.effectivePriority = -1;
+			}
 			if ((threadState = pickNextThread()) == null) {
 				owner = null;
 				return null;
@@ -175,10 +178,11 @@ public class PriorityScheduler extends Scheduler {
 			}
 			ThreadState result = null;
 			for (Iterator it = waitQueue.iterator(); it.hasNext(); ) {
-				ThreadState threadState = getThreadState((KThread)it.next()); 
+				ThreadState threadState = getThreadState((KThread)it.next());
 				if (result == null || result.getEffectivePriority() < threadState.getEffectivePriority()) {
 					result = threadState;
 				}
+
 			}
 			return result;
 		}
@@ -188,7 +192,7 @@ public class PriorityScheduler extends Scheduler {
 			// implement me (if you want)
 			for (Iterator it = waitQueue.iterator(); it.hasNext(); ) {
 				ThreadState threadState = getThreadState((KThread)it.next());
-				System.out.print("(" + threadState.thread + ": " + threadState.priority + ") ");
+				System.out.print("(" + threadState.thread + ": " + threadState.getPriority() + ") ");
 			}
 			System.out.println("");
 		}
@@ -247,12 +251,6 @@ public class PriorityScheduler extends Scheduler {
 			if (waitList == null) {
 				return effectivePriority;
 			}
-			for (Iterator it = waitList.waitQueue.iterator(); it.hasNext(); ) {
-				ThreadState threadState = getThreadState((KThread)it.next());
-				if (threadState.priority > effectivePriority) {
-					effectivePriority = threadState.priority;
-				}
-			}
 			return effectivePriority;
 		}
 
@@ -286,11 +284,19 @@ public class PriorityScheduler extends Scheduler {
 		 */
 		public void waitForAccess(PriorityQueue waitQueue) {
 			// implement me
+			boolean intStatus = Machine.interrupt().disable();
 			waitQueue.waitQueue.add(this.thread);
+			belong = waitQueue;
 			if (!waitQueue.transferPriority) {
 				return;
 			}
-			waitQueue.owner.effectivePriority = -1;
+			for (PriorityQueue current = belong; current.owner != null && current.owner.belong != current; current = current.owner.belong) {
+				if (this.getEffectivePriority() > current.owner.effectivePriority) {
+					current.owner.effectivePriority = this.getEffectivePriority();
+				}
+			}
+			Machine.interrupt().setStatus(intStatus);
+			
 		}
 
 		/**
@@ -305,10 +311,13 @@ public class PriorityScheduler extends Scheduler {
 		 */
 		public void acquire(PriorityQueue waitQueue) {
 			// implement me
+			boolean intStatus = Machine.interrupt().disable();
 			waitQueue.waitQueue.remove(this.thread);
 			waitQueue.owner = this;
 			waitQueue.owner.effectivePriority = -1;
 			waitQueue.owner.waitList = waitQueue;
+			waitQueue.owner.belong = waitQueue;
+			Machine.interrupt().setStatus(intStatus);
 		}
 
 		/** The thread with which this object is associated. */
@@ -319,7 +328,7 @@ public class PriorityScheduler extends Scheduler {
 		protected int effectivePriority = -1;// -1 stands for need to recalculate this value
 		
 		protected PriorityQueue waitList = null;
-
+		protected PriorityQueue belong = null;
 	}
 }
 

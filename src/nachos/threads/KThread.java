@@ -425,8 +425,8 @@ public class KThread {
 		//tester.TestJoin.selfTest();
 		//tester.TestAlarm.selfTest();
 		//tester.TestCommunicator.selfTest();
-		//tester.TestPriorityScheduler.selfTest();
-		tester.TestCondition2.selfTest();
+		tester.TestPriorityScheduler.selfTest();
+		//tester.TestCondition2.selfTest();
 		/*
 		 * May because of some Nachos intrinsic problems, TestCondition2.selfTest terminated unexpected
 		 */
