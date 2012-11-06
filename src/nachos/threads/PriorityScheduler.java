@@ -185,8 +185,8 @@ public class PriorityScheduler extends Scheduler {
 				if (result == null || result.getEffectivePriority() < threadState.getEffectivePriority()) {
 					result = threadState;
 				}
-
 			}
+			//System.out.println(result.effectivePriority + " " + result.priority);
 			return result;
 		}
 
@@ -195,9 +195,13 @@ public class PriorityScheduler extends Scheduler {
 			// implement me (if you want)
 			for (Iterator it = waitQueue.iterator(); it.hasNext(); ) {
 				ThreadState threadState = getThreadState((KThread)it.next());
-				System.out.print("(" + threadState.thread + ": " + threadState.getPriority() + ") ");
+				System.out.print("(" + threadState.thread + ": " + threadState.getPriority() + " " + threadState.getEffectivePriority() + ") ");
 			}
 			System.out.println("");
+		}
+		
+		public void setOwner(KThread thread) {
+			owner = getThreadState(thread);
 		}
 
 		/**
@@ -245,16 +249,16 @@ public class PriorityScheduler extends Scheduler {
 		 * 
 		 * @return the effective priority of the associated thread.
 		 */
-		public int getEffectivePriority() {
+		public int getEffectivePriority() {//System.out.println("here!");
 			// implement me
 			if (effectivePriority != -1) {
 				return effectivePriority;
 			}
 			effectivePriority = priority;
-			if (waitList == null) {
-				return effectivePriority;
-			}
 			for (PriorityQueue waitQueue : waitList) {
+				if (!waitQueue.transferPriority) {
+					continue;
+				}
 				for (Iterator it = waitQueue.waitQueue.iterator(); it.hasNext(); ) {
 					ThreadState threadState = getThreadState((KThread)it.next());
 					if (threadState.getEffectivePriority() > effectivePriority) {
@@ -278,7 +282,7 @@ public class PriorityScheduler extends Scheduler {
 			this.priority = priority;
 
 			// implement me
-			effectivePriority = -1;
+			effectivePriority = priority;
 		}
 
 		/**
@@ -293,21 +297,25 @@ public class PriorityScheduler extends Scheduler {
 		 * 
 		 * @see nachos.threads.ThreadQueue#waitForAccess
 		 */
-		public void waitForAccess(PriorityQueue waitQueue) {
+		public void waitForAccess(PriorityQueue waitQueue) {//System.out.println("!");
 			// implement me
 			boolean intStatus = Machine.interrupt().disable();
 			waitQueue.waitQueue.add(this.thread);
 			belong = waitQueue;
-			if (!waitQueue.transferPriority) {
-				return;
-			}
-			for (PriorityQueue current = belong; current.owner != null && current.owner.belong != current; current = current.owner.belong) {
-				if (this.getEffectivePriority() > current.owner.effectivePriority) {
-					current.owner.effectivePriority = this.getEffectivePriority();
+			for (PriorityQueue current = belong; current.owner != null; current = current.owner.belong) {
+				if (!current.transferPriority) {
+					break;
+				}
+				current.owner.getEffectivePriority();
+				int updateV = getEffectivePriority();
+				if (updateV > current.owner.effectivePriority) {
+					current.owner.effectivePriority = updateV;
+				}
+				if (current.owner.belong == null) {
+					break;
 				}
 			}
 			Machine.interrupt().setStatus(intStatus);
-			
 		}
 
 		/**
@@ -327,7 +335,7 @@ public class PriorityScheduler extends Scheduler {
 			waitQueue.owner = this;
 			waitQueue.owner.effectivePriority = -1;
 			waitQueue.owner.waitList.add(waitQueue);
-			waitQueue.owner.belong = waitQueue;
+			waitQueue.owner.belong = null;
 			Machine.interrupt().setStatus(intStatus);
 		}
 
@@ -336,7 +344,7 @@ public class PriorityScheduler extends Scheduler {
 		/** The priority of the associated thread. */
 		protected int priority;
 		
-		protected int effectivePriority = -1;// -1 stands for need to recalculate this value
+		protected int effectivePriority = -1;
 		
 		protected LinkedList<PriorityQueue> waitList = new LinkedList<PriorityQueue>();
 		protected PriorityQueue belong = null;

@@ -1,5 +1,9 @@
 package nachos.threads;
 
+import nachos.machine.Lib;
+import nachos.machine.Machine;
+import java.util.LinkedList;
+
 /**
  * A <i>communicator</i> allows threads to synchronously exchange 32-bit
  * messages. Multiple threads can be waiting to <i>speak</i>, and multiple
@@ -12,11 +16,10 @@ public class Communicator {
 	 * Allocate a new communicator.
 	 */
 	public Communicator() {
-		commonLock = new Lock();
-		speaker = new Condition(commonLock);
-		listener = new Condition(commonLock);
-		counter = 0;
-		lastWordReceived = true;
+		lock = new Lock();
+		speakList = new LinkedList<S>();
+		listenList = new LinkedList<L>();
+		
 	}
 
 	/**
@@ -31,21 +34,19 @@ public class Communicator {
 	 *            the integer to transfer.
 	 */
 	public void speak(int word) {
-		commonLock.acquire();
-		counter++;
-		//System.out.println(counter);
-		if (counter > 0) {
-			speaker.sleep();
+		lock.acquire();
+		if (listenList.isEmpty()) {
+			Condition c = new Condition(lock);
+			speakList.add(new S(c, word));
+			c.sleep();
+			
+		} else {
+			L who = listenList.getFirst();
+			who.result = word;
+			listenList.removeFirst();
+			who.condition.wake();
 		}
-		while (!lastWordReceived) {
-			commonLock.release();
-			KThread.yield();
-			commonLock.acquire();
-		}
-		lastWordReceived = false;
-		message = word;
-		listener.wake();
-		commonLock.release();
+		lock.release();
 	}
 
 	/**
@@ -55,24 +56,47 @@ public class Communicator {
 	 * @return the integer transferred.
 	 */
 	public int listen() {
-		commonLock.acquire();
-		counter--;
-		//System.out.println("!" + counter);
-		if (counter >= 0) {
-			speaker.wake();
+		int result = -1;
+		L current;
+		
+		lock.acquire();
+		if (speakList.isEmpty()) {
+			Condition c = new Condition(lock);
+			listenList.add(current = new L(c));
+			c.sleep();
+			result = current.result;
+		} else {
+			S who = speakList.getFirst();
+			result = who.word;
+			speakList.removeFirst();
+			who.condition.wake();
 		}
-		listener.sleep();
-		int result = message;
-		lastWordReceived = true;
-		commonLock.release();
+		lock.release();
 		return result;
 	}
 	
-	private Condition speaker;
-	private Condition listener;
-	private Lock commonLock;
-	private int counter;
-	private int message;
-	private boolean lastWordReceived;
+	private class S {
+		Condition condition;
+		int word;
+		
+		S(Condition condition, int word) {
+			this.condition = condition;
+			this.word = word;
+		}
+	}
+	
+	private class L {
+		Condition condition;
+		int result;
+		
+		L(Condition condition) {
+			this.condition = condition;
+			this.result = -1;
+		}
+	}
+	
+	private LinkedList<S> speakList;
+	private LinkedList<L> listenList;
+	Lock lock;
 }
 

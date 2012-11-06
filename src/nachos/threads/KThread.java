@@ -67,6 +67,7 @@ public class KThread {
 
 			createIdleThread();
 		}
+
 	}
 
 	/**
@@ -205,7 +206,7 @@ public class KThread {
 
 		currentThread.status = statusFinished;
 
-        currentThread.joinSemaphore.V();
+		currentThread.joinSemaphore.V();
 
 		sleep();
 	}
@@ -289,7 +290,7 @@ public class KThread {
 
 		Lib.assertTrue(this != currentThread);
 
-        joinSemaphore.P();
+		joinSemaphore.P();
 	}
 
 	/**
@@ -425,7 +426,7 @@ public class KThread {
 		//tester.TestJoin.selfTest();
 		//tester.TestAlarm.selfTest();
 		//tester.TestCommunicator.selfTest();
-		tester.TestPriorityScheduler.selfTest();
+		//tester.TestPriorityScheduler.selfTest();
 		//tester.TestCondition2.selfTest();
 		/*
 		 * May because of some Nachos intrinsic problems, TestCondition2.selfTest terminated unexpected
@@ -470,5 +471,5 @@ public class KThread {
 	private static KThread toBeDestroyed = null;
 	private static KThread idleThread = null;
 
-    private Semaphore joinSemaphore = new Semaphore(0);
+	private Semaphore joinSemaphore = new Semaphore(0);
 }
