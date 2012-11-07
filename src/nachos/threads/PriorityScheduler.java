@@ -154,9 +154,6 @@ public class PriorityScheduler extends Scheduler {
 			
 			ThreadState threadState;
 			if (owner != null) {
-				if (this.transferPriority) {
-					owner.effectivePriority = -1;
-				}
 				owner.waitList.remove(this);
 			}
 			if ((threadState = pickNextThread()) == null) {
@@ -198,10 +195,6 @@ public class PriorityScheduler extends Scheduler {
 				System.out.print("(" + threadState.thread + ": " + threadState.getPriority() + " " + threadState.getEffectivePriority() + ") ");
 			}
 			System.out.println("");
-		}
-		
-		public void setOwner(KThread thread) {
-			owner = getThreadState(thread);
 		}
 
 		/**
@@ -251,8 +244,9 @@ public class PriorityScheduler extends Scheduler {
 		 */
 		public int getEffectivePriority() {//System.out.println("here!");
 			// implement me
+			int donationPart2 = getJoinDonation(); 
 			if (effectivePriority != -1) {
-				return effectivePriority;
+				return Math.max(donationPart2, effectivePriority);
 			}
 			effectivePriority = priority;
 			for (PriorityQueue waitQueue : waitList) {
@@ -266,7 +260,19 @@ public class PriorityScheduler extends Scheduler {
 					}
 				}
 			}
-			return effectivePriority;
+
+			return Math.max(effectivePriority, donationPart2);
+		}
+		
+		private int getJoinDonation() {
+			int result = -1;
+			for (KThread joinThread : thread.joinList) {
+				ThreadState threadState = getThreadState(joinThread);
+				if (threadState.getEffectivePriority() > result) {
+					result = threadState.getEffectivePriority();
+				}
+			}			
+			return result;
 		}
 
 		/**
@@ -275,6 +281,21 @@ public class PriorityScheduler extends Scheduler {
 		 * @param priority
 		 *            the new priority.
 		 */
+		protected void modifyPath() {
+			if (belong == null) {
+				return;
+			}
+			for (PriorityQueue current = belong; current.owner != null; current = current.owner.belong) {
+				if (!current.transferPriority) {
+					break;
+				}
+				current.owner.effectivePriority = -1;
+				if (current.owner.belong == null) {
+					break;
+				}
+			}
+		}
+		
 		public void setPriority(int priority) {
 			if (this.priority == priority)
 				return;
@@ -282,7 +303,8 @@ public class PriorityScheduler extends Scheduler {
 			this.priority = priority;
 
 			// implement me
-			effectivePriority = priority;
+			effectivePriority = -1;
+			modifyPath();
 		}
 
 		/**
@@ -302,19 +324,7 @@ public class PriorityScheduler extends Scheduler {
 			boolean intStatus = Machine.interrupt().disable();
 			waitQueue.waitQueue.add(this.thread);
 			belong = waitQueue;
-			for (PriorityQueue current = belong; current.owner != null; current = current.owner.belong) {
-				if (!current.transferPriority) {
-					break;
-				}
-				current.owner.getEffectivePriority();
-				int updateV = getEffectivePriority();
-				if (updateV > current.owner.effectivePriority) {
-					current.owner.effectivePriority = updateV;
-				}
-				if (current.owner.belong == null) {
-					break;
-				}
-			}
+			modifyPath();
 			Machine.interrupt().setStatus(intStatus);
 		}
 
@@ -332,6 +342,11 @@ public class PriorityScheduler extends Scheduler {
 			// implement me
 			boolean intStatus = Machine.interrupt().disable();
 			waitQueue.waitQueue.remove(this.thread);
+			if (waitQueue.transferPriority) {
+				if (waitQueue.owner != null) {
+					waitQueue.owner.modifyPath();
+				}
+			}
 			waitQueue.owner = this;
 			waitQueue.owner.effectivePriority = -1;
 			waitQueue.owner.waitList.add(waitQueue);
