@@ -77,7 +77,7 @@ public class DonationGrader extends BasicTestGrader {
 		low.thread.join();
 	}
 
-	private void alwaysYield() {		
+	private void alwaysYield() {
 		for (int i = 0; i < 10000; ++i) {
 			KThread.yield();
 		}

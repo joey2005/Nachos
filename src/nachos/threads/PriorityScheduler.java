@@ -179,6 +179,10 @@ public class PriorityScheduler extends Scheduler {
 			ThreadState result = null;
 			for (Iterator it = waitQueue.iterator(); it.hasNext(); ) {
 				ThreadState threadState = getThreadState((KThread)it.next());
+				threadState.effectivePriority = -1;
+			}
+			for (Iterator it = waitQueue.iterator(); it.hasNext(); ) {
+				ThreadState threadState = getThreadState((KThread)it.next());
 				if (result == null || result.getEffectivePriority() < threadState.getEffectivePriority()) {
 					result = threadState;
 				}
@@ -303,8 +307,8 @@ public class PriorityScheduler extends Scheduler {
 			this.priority = priority;
 
 			// implement me
-			effectivePriority = -1;
-			modifyPath();
+			//effectivePriority = -1;
+			//modifyPath();
 		}
 
 		/**
@@ -324,7 +328,7 @@ public class PriorityScheduler extends Scheduler {
 			boolean intStatus = Machine.interrupt().disable();
 			waitQueue.waitQueue.add(this.thread);
 			belong = waitQueue;
-			modifyPath();
+			//modifyPath();
 			Machine.interrupt().setStatus(intStatus);
 		}
 
@@ -342,13 +346,17 @@ public class PriorityScheduler extends Scheduler {
 			// implement me
 			boolean intStatus = Machine.interrupt().disable();
 			waitQueue.waitQueue.remove(this.thread);
+			/*
 			if (waitQueue.transferPriority) {
+				
 				if (waitQueue.owner != null) {
 					waitQueue.owner.modifyPath();
 				}
+			
 			}
+			*/
 			waitQueue.owner = this;
-			waitQueue.owner.effectivePriority = -1;
+			//waitQueue.owner.effectivePriority = -1;
 			waitQueue.owner.waitList.add(waitQueue);
 			waitQueue.owner.belong = null;
 			Machine.interrupt().setStatus(intStatus);
