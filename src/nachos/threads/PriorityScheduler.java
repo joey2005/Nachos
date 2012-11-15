@@ -268,7 +268,7 @@ public class PriorityScheduler extends Scheduler {
 			return Math.max(effectivePriority, donationPart2);
 		}
 		
-		private int getJoinDonation() {
+		public int getJoinDonation() {
 			int result = -1;
 			for (KThread joinThread : thread.joinList) {
 				ThreadState threadState = getThreadState(joinThread);

@@ -1,5 +1,13 @@
 package nachos.threads;
 
+import java.util.Iterator;
+import java.util.LinkedList;
+
+import nachos.machine.Lib;
+import nachos.machine.Machine;
+import nachos.threads.PriorityScheduler.PriorityQueue;
+import nachos.threads.PriorityScheduler.ThreadState;
+
 /**
  * A scheduler that chooses threads using a lottery.
  * 
@@ -24,9 +32,10 @@ public class LotteryScheduler extends PriorityScheduler {
 	/**
 	 * Allocate a new lottery scheduler.
 	 */
+	//Phase 2 Task 4
 	public LotteryScheduler() {
 	}
-
+	
 	/**
 	 * Allocate a new lottery thread queue.
 	 * 
@@ -37,6 +46,52 @@ public class LotteryScheduler extends PriorityScheduler {
 	 */
 	public ThreadQueue newThreadQueue(boolean transferPriority) {
 		// implement me
-		return null;
+		return new PriorityQueue(transferPriority);
+	}
+	
+	protected ThreadState getThreadState(KThread thread) {
+		if (thread.schedulingState == null)
+			thread.schedulingState = new ThreadState(thread);
+
+		return (ThreadState) thread.schedulingState;
+	}
+	
+	protected class PriorityQueue extends PriorityScheduler.PriorityQueue {
+		PriorityQueue(boolean transferPriority) {
+			super(transferPriority);
+		}
+		
+		public void waitForAccess(KThread thread) {
+			Lib.assertTrue(Machine.interrupt().disabled());
+			getThreadState(thread).waitForAccess(this);
+		}
+	}
+	
+	protected class ThreadState extends PriorityScheduler.ThreadState {
+		ThreadState(KThread thread) {
+			super(thread);
+		}
+		
+		public int getEffectivePriority() {
+			int donationPart2 = getJoinDonation(); 
+			if (effectivePriority != -1) {
+				return donationPart2 + effectivePriority;
+			}
+			effectivePriority = priority;
+			for (PriorityQueue waitQueue : waitList) {
+				if (!waitQueue.transferPriority) {
+					continue;
+				}
+				for (Iterator it = waitQueue.waitQueue.iterator(); it.hasNext(); ) {
+					ThreadState threadState = getThreadState((KThread)it.next());
+					
+					effectivePriority += threadState.getEffectivePriority();
+				}
+			}
+
+			return effectivePriority + donationPart2;
+		}
+		
+		protected LinkedList<PriorityQueue> waitList = new LinkedList<PriorityQueue>();
 	}
 }
