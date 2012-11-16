@@ -2,6 +2,7 @@ package nachos.threads;
 
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.Random;
 
 import nachos.machine.Lib;
 import nachos.machine.Machine;
@@ -44,54 +45,87 @@ public class LotteryScheduler extends PriorityScheduler {
 	 *            waiting threads to the owning thread.
 	 * @return a new lottery thread queue.
 	 */
+	@Override
 	public ThreadQueue newThreadQueue(boolean transferPriority) {
-		// implement me
 		return new PriorityQueue(transferPriority);
 	}
 	
-	protected ThreadState getThreadState(KThread thread) {
+	@Override
+	protected LotteryThreadState getThreadState(KThread thread) {
 		if (thread.schedulingState == null)
-			thread.schedulingState = new ThreadState(thread);
+			thread.schedulingState = new LotteryThreadState(thread);
 
-		return (ThreadState) thread.schedulingState;
+		return (LotteryThreadState) thread.schedulingState;
 	}
 	
-	protected class PriorityQueue extends PriorityScheduler.PriorityQueue {
-		PriorityQueue(boolean transferPriority) {
+	protected class LotteryQueue extends PriorityScheduler.PriorityQueue {
+
+		LotteryQueue(boolean transferPriority) {
 			super(transferPriority);
 		}
 		
-		public void waitForAccess(KThread thread) {
-			Lib.assertTrue(Machine.interrupt().disabled());
-			getThreadState(thread).waitForAccess(this);
+		@Override
+		protected ThreadState pickNextThread() {
+			if (waitQueue.isEmpty()) {
+				return null;
+			}
+			LotteryThreadState result = null;
+			for (Iterator it = waitQueue.iterator(); it.hasNext(); ) {
+				LotteryThreadState cur = getThreadState((KThread)it.next());
+				cur.effectivePriority = -1;
+			}
+			int intervals = 0;
+			for (Iterator it = waitQueue.iterator(); it.hasNext(); ) {
+				LotteryThreadState cur = getThreadState((KThread)it.next());
+				intervals += cur.getEffectivePriority();
+			}
+			int lucky = new Random().nextInt(intervals);
+			int high = 0;
+			for (Iterator it = waitQueue.iterator(); it.hasNext(); ) {
+				LotteryThreadState cur = getThreadState((KThread)it.next());
+				high += cur.getEffectivePriority();
+				if (high > lucky) {
+					return cur;
+				}
+			}
+			return result;
 		}
+
 	}
 	
-	protected class ThreadState extends PriorityScheduler.ThreadState {
-		ThreadState(KThread thread) {
+	protected class LotteryThreadState extends PriorityScheduler.ThreadState {
+
+		LotteryThreadState(KThread thread) {
 			super(thread);
 		}
 		
+		@Override
 		public int getEffectivePriority() {
 			int donationPart2 = getJoinDonation(); 
 			if (effectivePriority != -1) {
 				return donationPart2 + effectivePriority;
 			}
 			effectivePriority = priority;
-			for (PriorityQueue waitQueue : waitList) {
+			for (LotteryQueue waitQueue : waitList) {
 				if (!waitQueue.transferPriority) {
 					continue;
 				}
-				for (Iterator it = waitQueue.waitQueue.iterator(); it.hasNext(); ) {
-					ThreadState threadState = getThreadState((KThread)it.next());
-					
-					effectivePriority += threadState.getEffectivePriority();
+				
+				if (waitQueue.owner == null) {
+					for (Iterator it = waitQueue.waitQueue.iterator(); it.hasNext(); ) {
+						ThreadState threadState = getThreadState((KThread)it.next());
+						effectivePriority += threadState.getEffectivePriority();
+					}
+				} else {
+					effectivePriority += waitQueue.owner.getEffectivePriority();
 				}
 			}
 
 			return effectivePriority + donationPart2;
 		}
 		
-		protected LinkedList<PriorityQueue> waitList = new LinkedList<PriorityQueue>();
+		protected LinkedList<LotteryQueue> waitList = new LinkedList<LotteryQueue>();
+		protected LotteryQueue belong = null;
 	}
+	
 }
