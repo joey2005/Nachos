@@ -71,13 +71,11 @@ public class LotteryScheduler extends PriorityScheduler {
 			}
 			LotteryThreadState result = null;
 			for (Iterator it = waitQueue.iterator(); it.hasNext(); ) {
-				LotteryThreadState cur = getThreadState((KThread)it.next());
-				cur.effectivePriority = -1;
+				getThreadState((KThread)it.next()).effectivePriority = -1;
 			}
 			int intervals = 0;
 			for (Iterator it = waitQueue.iterator(); it.hasNext(); ) {
-				LotteryThreadState cur = getThreadState((KThread)it.next());
-				intervals += cur.getEffectivePriority();
+				intervals += getThreadState((KThread)it.next()).getEffectivePriority();
 			}
 			int lucky = new Random().nextInt(intervals);
 			int high = 0;
@@ -111,17 +109,21 @@ public class LotteryScheduler extends PriorityScheduler {
 					continue;
 				}
 				
-				if (waitQueue.owner == null) {
-					for (Iterator it = waitQueue.waitQueue.iterator(); it.hasNext(); ) {
-						ThreadState threadState = getThreadState((KThread)it.next());
-						effectivePriority += threadState.getEffectivePriority();
-					}
-				} else {
-					effectivePriority += waitQueue.owner.getEffectivePriority();
+				for (Iterator it = waitQueue.waitQueue.iterator(); it.hasNext(); ) {
+					effectivePriority += getThreadState((KThread)it.next()).getEffectivePriority();
 				}
 			}
 
 			return effectivePriority + donationPart2;
+		}
+		
+		@Override
+		protected int getJoinDonation() {
+			int result = 0;
+			for (KThread joinThread : thread.joinList) {
+				result += getThreadState(joinThread).getEffectivePriority();
+			}			
+			return result;
 		}
 		
 		protected LinkedList<LotteryQueue> waitList = new LinkedList<LotteryQueue>();

@@ -128,13 +128,7 @@ public class UserProcess {
 	 * @return the number of bytes successfully transferred.
 	 */
 	public int readVirtualMemory(int vaddr, byte[] data) {
-		/*
-		int amount = readVirtualMemory(vaddr, data, 0, data.length);
-		for (int i = 0; i < data.length; ++i) {
-			System.out.print(data[i] + " ");
-		}
-		System.out.println();
-		return amount;*/
+
 		return readVirtualMemory(vaddr, data, 0, data.length);
 	}
 
@@ -163,20 +157,7 @@ public class UserProcess {
 				&& offset + length <= data.length);
 
 		byte[] memory = Machine.processor().getMemory();
-		
-		if (vaddr < 0 || vaddr >= memory.length) {
-			return 0;
-		}
 
-		/*
-		// for now, just assume that virtual addresses equal physical addresses
-		if (vaddr < 0 || vaddr >= memory.length)
-			return 0;
-
-		int amount = Math.min(length, memory.length - vaddr);
-		System.arraycopy(memory, vaddr, data, offset, amount);
-		*/
-		
 		// Virtual address [vaddr, vaddrEnd)
 		int vaddrEnd = vaddr + length - 1;
 		// virtual address in that start virtual page
@@ -214,13 +195,7 @@ public class UserProcess {
 	 * @return the number of bytes successfully transferred.
 	 */
 	public int writeVirtualMemory(int vaddr, byte[] data) {
-		/*
-		int amount = writeVirtualMemory(vaddr, data, 0, data.length);
-		for (int i = 0; i < data.length; ++i) {
-			System.out.print(data[i] + " ");
-		}
-		System.out.println();
-		return amount;*/
+
 		return writeVirtualMemory(vaddr, data, 0, data.length);
 	}
 
@@ -247,20 +222,7 @@ public class UserProcess {
 				&& offset + length <= data.length);
 
 		byte[] memory = Machine.processor().getMemory();
-		
-		if (vaddr < 0 || vaddr >= memory.length) {
-			return 0;
-		}
 
-		/*
-		// for now, just assume that virtual addresses equal physical addresses
-		if (vaddr < 0 || vaddr >= memory.length)
-			return 0;
-
-		int amount = Math.min(length, memory.length - vaddr);
-		System.arraycopy(data, offset, memory, vaddr, amount);
-		*/
-		
 		// Virtual address [vaddr, vaddrEnd)
 		int vaddrEnd = vaddr + length - 1;
 		// virtual address in that start virtual page
@@ -422,11 +384,6 @@ public class UserProcess {
 
 			for (int i = 0; i < section.getLength(); i++) {
 				int vpn = section.getFirstVPN() + i;
-
-				/*
-				// for now, just assume virtual addresses=physical addresses
-				 *
-				 */
 
 				int ppn = ppList[vpn];
 				pageTable[vpn] = new TranslationEntry(vpn, ppn, true, section.isReadOnly(), false, false);
@@ -892,6 +849,9 @@ public class UserProcess {
 		
 		byte[] content = Lib.bytesFromInt(child.status);
 		this.writeVirtualMemory(statusPos, content);
+		if (child.status == -1) {
+			return 0;
+		}
 		return 1;//exit normally
 	}
 	
@@ -949,6 +909,23 @@ public class UserProcess {
 							.readRegister(Processor.regA3));
 			processor.writeRegister(Processor.regV0, result);
 			processor.advancePC();
+			break;
+			
+		/** Caused by an access to an invalid virtual page. */
+		case Processor.exceptionPageFault :
+		/** Caused by an access to a virtual page not mapped by any TLB entry. */
+		case Processor.exceptionTLBMiss :
+		/** Caused by a write access to a read-only virtual page. */
+		case Processor.exceptionReadOnly :
+		/** Caused by an access to an invalid physical page. */
+		case Processor.exceptionBusError :
+		/** Caused by an access to a misaligned virtual address. */
+		case Processor.exceptionAddressError :
+		/** Caused by an overflow by a signed operation. */
+		case Processor.exceptionOverflow :
+		/** Caused by an attempt to execute an illegal instruction. */
+		case Processor.exceptionIllegalInstruction :
+			this.handleExit(-1);
 			break;
 
 		default:
