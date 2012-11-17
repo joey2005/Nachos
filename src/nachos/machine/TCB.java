@@ -169,9 +169,7 @@ public final class TCB {
 		previous.running = false;
 
 		this.interrupt();
-		//System.out.println("!!");
 		previous.yield();
-		//System.out.println("!");
 	}
 
 	/**

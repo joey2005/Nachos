@@ -72,6 +72,10 @@ public class UserKernel extends ThreadedKernel {
 	}
 	
 	//Phase 2 Task 2 page management
+	static int freePageCount() {
+		return freePage.size();
+	}
+	
 	static void releasePage(int ppn) {
 		pageLock.acquire();
 		freePage.add(new Integer(ppn));
@@ -89,12 +93,12 @@ public class UserKernel extends ThreadedKernel {
 			 Integer ppn = (Integer)freePage.removeFirst();
 			 if (ppn == null) {
 				 for (int i = 0; i < count; ++i) {
-					 freePage.add(result[i]);
+					 freePage.add(new Integer(result[i]));
 				 }
 				 pageLock.release();
 				 return null;
 			 }
-			 result[count++] = ppn;
+			 result[count++] = ppn.intValue();
 		}
 		
 		pageLock.release();
@@ -136,7 +140,7 @@ public class UserKernel extends ThreadedKernel {
 		rootProcess = process;
 
 		String shellProgram = Machine.getShellProgramName();
-		Lib.assertTrue(process.execute(shellProgram, new String[] {"cat", "12.txt"}));
+		Lib.assertTrue(process.execute(shellProgram, new String[] { }));
 
 		KThread.finish();
 	}
@@ -152,7 +156,7 @@ public class UserKernel extends ThreadedKernel {
 	public static SynchConsole console;
 
 	//phase 2 task 2
-	static UserProcess rootProcess;
+	static UserProcess rootProcess = null;
 	private static Lock pageLock;
 	private static LinkedList freePage;
 }
