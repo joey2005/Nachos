@@ -410,6 +410,7 @@ public class UserProcess {
 			UserKernel.releasePage(pageTable[i].ppn);
 		}
 		pageTable = null;
+		coff.close();
 	}
 
 	/**
@@ -684,7 +685,6 @@ public class UserProcess {
 			fileStore.remove(file);
 			descriptor.remove(new Integer(fd));
 		}
-		//System.err.println(fileStore.get(file.getName()).length);
 		file.close();
 		if (removeList.contains(name) && fileStore.get(name).length == 0) {
 			if (!UserKernel.fileSystem.remove(name)) {
@@ -746,12 +746,7 @@ public class UserProcess {
 		unloadSections();
 		
 		processTable.remove(new Integer(this.processID));
-		/*
-		System.err.println(this.processID + ": ");
-		for (Iterator it = processTable.keySet().iterator(); it.hasNext(); ) {
-			System.err.println((Integer)it.next());		
-		}
-		System.err.println("==============");*/
+
 		if (processTable.size() == 0) {
 			Kernel.kernel.terminate();
 		}
@@ -807,9 +802,9 @@ public class UserProcess {
 		}
 		
 		UserProcess child = new UserProcess();	
-		childProcess.add(new Integer(child.processID));
+		childProcess.put(new Integer(child.processID), child);
 
-		if (!child.execute(name, args)) {//exit on error, such as file does not existed
+		if (!child.execute(name, args)) {//exit on error
 			childProcess.remove(new Integer(child.processID));
 			processTable.remove(new Integer(child.processID));
 			return -1;
@@ -836,14 +831,13 @@ public class UserProcess {
 	 * process of the current process, returns -1.
 	 */
 	private int handleJoin(int processID, int statusPos) {
-		if (!childProcess.contains(new Integer(processID))) {
+		if (!childProcess.containsKey(new Integer(processID))) {
 			return -1;
 		}
 		UserProcess child = (UserProcess)processTable.get(new Integer(processID));
 		if (child == null) {
-			//If the child exited as a result of an unhandled exception
 			processTable.remove(new Integer(processID));
-			return 0;
+			child = (UserProcess)childProcess.get(new Integer(processID));
 		}
 		child.thread.join();
 		
@@ -856,35 +850,55 @@ public class UserProcess {
 	}
 	
 	public int handleSyscall(int syscall, int a0, int a1, int a2, int a3) {
-		//System.err.println(this.processID + " " + syscall);
 		switch (syscall) {
-		case syscallHalt:
+		case syscallHalt: {
+			//System.err.println(this.processID + " " + "syscallHalt");
 			return handleHalt();
+		}
 		//Phase 2 Task 1: 
-		case syscallCreate:
+		case syscallCreate: {
+			//System.err.println(this.processID + " " + "syscallCreate");
 			return handleCreate(a0);
-		case syscallOpen:
+		}
+		case syscallOpen: {
+			//System.err.println(this.processID + " " + "syscallOpen");
 			return handleOpen(a0);
-		case syscallRead:
+		}
+		case syscallRead: {
+			//System.err.println(this.processID + " " + "syscallRead");
 			return handleRead(a0, a1, a2);
-		case syscallWrite:
+		}
+		case syscallWrite: {
+			//System.err.println(this.processID + " " + "syscallWrite");
 			return handleWrite(a0, a1, a2);
-		case syscallClose:
+		}
+		case syscallClose: {
+			//System.err.println(this.processID + " " + "syscallClose");
 			return handleClose(a0);
-		case syscallUnlink:
+		}
+		case syscallUnlink: {
+			//System.err.println(this.processID + " " + "syscallUnlink");
 			return handleUnlink(a0);
+		}
 		//Phase 2 Task 3:
-		case syscallExit:
+		case syscallExit: {
+			//System.err.println(this.processID + " " + "syscallExit");
 			return handleExit(a0);
-		case syscallExec:
+		}
+		case syscallExec: {
+			//System.err.println(this.processID + " " + "syscallExec");
 			return handleExec(a0, a1, a2);
-		case syscallJoin:
+		}
+		case syscallJoin: {
+			//System.err.println(this.processID + " " + "syscallJoin");
 			return handleJoin(a0, a1);
+		}
 			
 
 		default:
-			Lib.debug(dbgProcess, "Unknown syscall " + syscall);
-			Lib.assertNotReached("Unknown system call!");
+			this.handleExit(-1);
+			//Lib.debug(dbgProcess, "Unknown syscall " + syscall);
+			//Lib.assertNotReached("Unknown system call!");
 		}
 		return 0;
 	}
@@ -954,7 +968,7 @@ public class UserProcess {
 	
 	
 	//Phase 2 Task 3
-	private HashSet childProcess = new HashSet();
+	private HashMap childProcess = new HashMap();
 	private int processID;
 	private int status;
 	

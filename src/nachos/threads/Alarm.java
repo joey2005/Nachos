@@ -30,36 +30,19 @@ public class Alarm {
 	 * should be run.
 	 */
 	public void timerInterrupt() {
-		//KThread.yield();
-		
 		// My Code
 		boolean intStatus = Machine.interrupt().disable();
 		long currentTime = Machine.timer().getTime();
-		/*
-		System.out.println("================================");
-		System.out.println("Current Time is: " + currentTime);
-		System.out.println(wakeQueue.size());
-		for (WakeThread wakeThread : wakeQueue) {
-			System.out.println("Thread " + wakeThread.wakeThread.getName() + " is waiting!");
-		}
-		*/
-		LinkedList<WakeThread> tmp = new LinkedList<WakeThread>();
-		for (WakeThread wakeThread : wakeQueue) {
-			if (wakeThread.wakeTime <= currentTime) {
+
+		for (int i = 0; i < wakeQueue.size(); ++i) {
+			WakeThread wakeThread = wakeQueue.get(i);
+			if (wakeThread.wakeTime < currentTime) {
 				wakeThread.wakeThread.ready();
-			} else {
-				tmp.add(wakeThread);
+				wakeQueue.remove(i--);
 			}
 		}
-		wakeQueue = tmp;
-		/*
-		System.out.println(wakeQueue.size());
-		for (WakeThread wakeThread : wakeQueue) {
-			System.out.println("Thread " + wakeThread.wakeThread.getName() + " is still waiting!");
-		}
-		System.out.println("================================");
-		*/
 		Machine.interrupt().setStatus(intStatus);
+		KThread.yield();
 	}
 
 	/**
@@ -75,14 +58,7 @@ public class Alarm {
 	 * 
 	 * @see nachos.machine.Timer#getTime()
 	 */
-	public void waitUntil(long x) {
-		/*
-		// for now, cheat just to get something working (busy waiting is bad)
-		long wakeTime = Machine.timer().getTime() + x;
-		while (wakeTime > Machine.timer().getTime())
-			KThread.yield();
-		*/
-
+	public void waitUntil(long x) {		
 		// My Code
 		boolean intStatus = Machine.interrupt().disable();
 		long wakeTime = Machine.timer().getTime() + x;
@@ -103,4 +79,3 @@ public class Alarm {
 	
 	private LinkedList<WakeThread> wakeQueue = new LinkedList<WakeThread>();
 }
-
