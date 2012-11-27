@@ -6,3 +6,6 @@
 
 2012.11.17 20:03
     Phase 2 submitted, bugs may still remained.
+
+2012.11.27 21:55
+    Phase 2 already done, now starts phase 3.
