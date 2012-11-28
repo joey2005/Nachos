@@ -2,6 +2,7 @@ package nachos.userprog;
 
 import nachos.machine.*;
 import nachos.threads.*;
+import nachos.vm.*;
 
 import java.io.EOFException;
 import java.util.ArrayList;
@@ -27,15 +28,8 @@ public class UserProcess {
 	 * Allocate a new process.
 	 */
 	public UserProcess() {
-		/* useless
-		int numPhysPages = Machine.processor().getNumPhysPages();
-		pageTable = new TranslationEntry[numPhysPages];
-		for (int i = 0; i < numPhysPages; i++)
-			pageTable[i] = new TranslationEntry(i, i, true, false, false, false);
-		*/
-		
 		processID = processCount++;
-		processTable.put(new Integer(processID), this);
+		aliveCount++;
 		
 		descriptor.put(UserKernel.console.openForReading(), 0);
 		descriptor.put(UserKernel.console.openForWriting(), 1);
@@ -234,6 +228,7 @@ public class UserProcess {
 		for (int vpn = VPNStart; vpn <= VPNEnd; ++vpn) {
 			// do copy
 			int len = Math.min(length - amount, pageSize - startVAddr);
+			//System.err.println(this.getClass());
 			TranslationEntry PP = getPP(vpn, true);
 			// exception
 			if (PP == null) {
@@ -251,7 +246,7 @@ public class UserProcess {
 	}
 	
 	// Phase 2 Task 2
-	TranslationEntry getPP(int vpn, boolean writeBit) {
+	public TranslationEntry getPP(int vpn, boolean writeBit) {
 		if (vpn >= pageTable.length) {
 			return null;
 		}
@@ -745,9 +740,9 @@ public class UserProcess {
 		// need to free all pages
 		unloadSections();
 		
-		processTable.remove(new Integer(this.processID));
+		aliveCount--;
 
-		if (processTable.size() == 0) {
+		if (aliveCount == 0) {
 			Kernel.kernel.terminate();
 		}
 		UThread.finish();
@@ -801,12 +796,13 @@ public class UserProcess {
 			}
 		}
 		
-		UserProcess child = new UserProcess();	
+		//UserProcess child = new UserProcess();
+		UserProcess child = new VMProcess();
 		childProcess.put(new Integer(child.processID), child);
 
 		if (!child.execute(name, args)) {//exit on error
 			childProcess.remove(new Integer(child.processID));
-			processTable.remove(new Integer(child.processID));
+			aliveCount--;
 			return -1;
 		}
 
@@ -834,11 +830,7 @@ public class UserProcess {
 		if (!childProcess.containsKey(new Integer(processID))) {
 			return -1;
 		}
-		UserProcess child = (UserProcess)processTable.get(new Integer(processID));
-		if (child == null) {
-			processTable.remove(new Integer(processID));
-			child = (UserProcess)childProcess.get(new Integer(processID));
-		}
+		UserProcess child = (UserProcess)childProcess.get(new Integer(processID));
 		child.thread.join();
 		
 		byte[] content = Lib.bytesFromInt(child.status);
@@ -852,53 +844,51 @@ public class UserProcess {
 	public int handleSyscall(int syscall, int a0, int a1, int a2, int a3) {
 		switch (syscall) {
 		case syscallHalt: {
-			//System.err.println(this.processID + " " + "syscallHalt");
+			System.err.println(this.processID + " " + "syscallHalt");
 			return handleHalt();
 		}
 		//Phase 2 Task 1: 
 		case syscallCreate: {
-			//System.err.println(this.processID + " " + "syscallCreate");
+			System.err.println(this.processID + " " + "syscallCreate");
 			return handleCreate(a0);
 		}
 		case syscallOpen: {
-			//System.err.println(this.processID + " " + "syscallOpen");
+			System.err.println(this.processID + " " + "syscallOpen");
 			return handleOpen(a0);
 		}
 		case syscallRead: {
-			//System.err.println(this.processID + " " + "syscallRead");
+			System.err.println(this.processID + " " + "syscallRead");
 			return handleRead(a0, a1, a2);
 		}
 		case syscallWrite: {
-			//System.err.println(this.processID + " " + "syscallWrite");
+			System.err.println(this.processID + " " + "syscallWrite");
 			return handleWrite(a0, a1, a2);
 		}
 		case syscallClose: {
-			//System.err.println(this.processID + " " + "syscallClose");
+			System.err.println(this.processID + " " + "syscallClose");
 			return handleClose(a0);
 		}
 		case syscallUnlink: {
-			//System.err.println(this.processID + " " + "syscallUnlink");
+			System.err.println(this.processID + " " + "syscallUnlink");
 			return handleUnlink(a0);
 		}
 		//Phase 2 Task 3:
 		case syscallExit: {
-			//System.err.println(this.processID + " " + "syscallExit");
+			System.err.println(this.processID + " " + "syscallExit");
 			return handleExit(a0);
 		}
 		case syscallExec: {
-			//System.err.println(this.processID + " " + "syscallExec");
+			System.err.println(this.processID + " " + "syscallExec");
 			return handleExec(a0, a1, a2);
 		}
 		case syscallJoin: {
-			//System.err.println(this.processID + " " + "syscallJoin");
+			System.err.println(this.processID + " " + "syscallJoin");
 			return handleJoin(a0, a1);
 		}
 			
 
 		default:
 			this.handleExit(-1);
-			//Lib.debug(dbgProcess, "Unknown syscall " + syscall);
-			//Lib.assertNotReached("Unknown system call!");
 		}
 		return 0;
 	}
@@ -969,13 +959,13 @@ public class UserProcess {
 	
 	//Phase 2 Task 3
 	private HashMap childProcess = new HashMap();
-	private int processID;
+	public int processID;
 	private int status;
 	
 	private KThread thread;
 	
 	private static int processCount = 0;
-	private static HashMap processTable = new HashMap(); 
+	private static int aliveCount = 0;
 	
 	//Phase 2 Task 1
 	

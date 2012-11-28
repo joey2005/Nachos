@@ -71,7 +71,7 @@ public class PriorityScheduler extends Scheduler {
 
 		KThread thread = KThread.currentThread();
 
-		int priority = getPriority(thread);
+		int priority = this.getPriority(thread);
 		if (priority == priorityMaximum)
 		{
 		  Machine.interrupt().restore(intStatus); // bug identified by Xiao Jia @ 2011-11-04

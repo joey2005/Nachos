@@ -2,6 +2,7 @@ package nachos.vm;
 
 import nachos.machine.Machine;
 import nachos.machine.Processor;
+import nachos.machine.TranslationEntry;
 import nachos.userprog.UserProcess;
 
 /**
@@ -20,7 +21,7 @@ public class VMProcess extends UserProcess {
 	 * Called by <tt>UThread.saveState()</tt>.
 	 */
 	public void saveState() {
-		super.saveState();
+		VMKernel.tlbScheduler.clearTLB(processID);
 	}
 
 	/**
@@ -28,7 +29,15 @@ public class VMProcess extends UserProcess {
 	 * <tt>UThread.restoreState()</tt>.
 	 */
 	public void restoreState() {
-		super.restoreState();
+
+	}
+	
+	public TranslationEntry getPP(int vpn, boolean writeBit) {
+		TranslationEntry entry = VMKernel.pageScheduler.getPageEntry(loader, processID, vpn);
+		if (entry == null || entry.readOnly && writeBit) {
+			return null;
+		}
+		return entry;
 	}
 
 	/**
@@ -37,15 +46,18 @@ public class VMProcess extends UserProcess {
 	 * 
 	 * @return <tt>true</tt> if successful.
 	 */
-	protected boolean loadSections() {
-		return super.loadSections();
+	protected boolean loadSections() {//use lazy loader
+		loader = new LazyLoader(coff);
+		return true;
 	}
 
 	/**
 	 * Release any resources allocated by <tt>loadSections()</tt>.
 	 */
 	protected void unloadSections() {
-		super.unloadSections();
+		VMKernel.tlbScheduler.clearTLB(processID);
+		VMKernel.pageScheduler.clearPage(processID);
+		coff.close();
 	}
 
 	/**
@@ -60,11 +72,21 @@ public class VMProcess extends UserProcess {
 		Processor processor = Machine.processor();
 
 		switch (cause) {
+		case Processor.exceptionTLBMiss:
+			VMKernel.tlbScheduler.handleTLBMiss(loader, processID, Processor.pageFromAddress(Machine.processor().readRegister(Processor.regBadVAddr)));
+			break;
+			
+		case Processor.exceptionPageFault:
+			VMKernel.pageScheduler.handlePageFault(loader, processID, Processor.pageFromAddress(Machine.processor().readRegister(Processor.regBadVAddr)));
+			break;
+		
 		default:
 			super.handleException(cause);
 			break;
 		}
 	}
+	
+	private LazyLoader loader;
 
 	private static final int pageSize = Processor.pageSize;
 	private static final char dbgProcess = 'a';

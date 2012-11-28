@@ -9,3 +9,6 @@
 
 2012.11.27 21:55
     Phase 2 already done, now starts phase 3.
+
+2012.11.28 22:42
+    Phase 3 code almost complete, but huge bugs to be dectected.
