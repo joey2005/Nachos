@@ -10,14 +10,14 @@ import nachos.machine.TranslationEntry;
 
 public class SwapFile {
 	public SwapFile() {
-		filename = "NachosDiskFile";
+		filename = "SWAP";
 		mapping = new HashMap<Pair, TranslationEntry>();
 		usedPage = new HashMap<Pair, Integer>();
 		freePage = new LinkedList<Integer>(); 
 	}
 	
 	public SwapFile(String name) {
-		filename = name == null ? "NachosDiskFile" : name;
+		filename = name == null ? "SWAP" : name;
 		mapping = new HashMap<Pair, TranslationEntry>();
 		usedPage = new HashMap<Pair, Integer>();
 		freePage = new LinkedList<Integer>(); 
@@ -68,6 +68,7 @@ public class SwapFile {
 			return null;
 		}
 		TranslationEntry entry = mapping.get(p);
+		entry.vpn = vpn;
 		entry.ppn = ppn;
 		entry.valid = true;
 		entry.dirty = false;

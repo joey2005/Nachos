@@ -12,3 +12,6 @@
 
 2012.11.28 22:42
     Phase 3 code almost complete, but huge bugs to be dectected.
+
+2012.11.29 18:28
+    cannot fix with non-dirty pages write back problems.....

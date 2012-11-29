@@ -94,14 +94,11 @@ public class PageScheduler {
 		boolean needToLoadSection = entry == null;
 		if (needToLoadSection) {
 			entry = new TranslationEntry(vpn, ppn, true, false, false, false);
+			//loadPages
+			entry.readOnly = loader.loadSection(vpn, ppn).readOnly;
 		}
 		pageTable.put(processID, entry);
 		queue.add(new Integer(ppn));
-		
-		//load pages
-		if (needToLoadSection) {
-			entry.readOnly = loader.loadSection(vpn, ppn).readOnly;
-		}
 		
 		pageLock.release();
 		
