@@ -1,13 +1,14 @@
 /*
  * Phase 3
- * use LRU;
  */
 
 package nachos.vm;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
 
+import nachos.machine.Config;
 import nachos.machine.Machine;
 import nachos.machine.Processor;
 import nachos.machine.TranslationEntry;
@@ -15,7 +16,7 @@ import nachos.threads.Lock;
 
 public class PageScheduler {
 	public PageScheduler() {
-		swapFile = new SwapFile();
+		swapFile = new SwapFile(Config.getString("swapFile"));
 		pageTable = new InvertedPageTable();
 	}
 
@@ -82,7 +83,9 @@ public class PageScheduler {
 		}
 		TranslationEntry entry = pageTable.getTranslationEntry(tmpppn);
 		//check if dirty
-		swapFile.swapToFile(tmppid, tmpvpn, entry);
+		if (entry != null && entry.dirty) {
+			swapFile.swapToFile(tmppid, tmpvpn, entry);
+		}
 		pageTable.removePage(tmppid, tmpvpn);
 		
 		//swapToMemory
@@ -97,16 +100,7 @@ public class PageScheduler {
 		
 		//load pages
 		if (needToLoadSection) {
-			if (loader.isCodeSection(vpn)) {
-				entry.readOnly = loader.loadSection(vpn, ppn).readOnly;
-			} else {//flush
-				byte[] data = Machine.processor().getMemory();
-				int start = Processor.makeAddress(ppn, 0);
-				int end = start + Processor.pageSize;
-				for (int i = start; i < end; i++) {
-					data[i] = 0;
-				}
-			}
+			entry.readOnly = loader.loadSection(vpn, ppn).readOnly;
 		}
 		
 		pageLock.release();
@@ -121,7 +115,9 @@ public class PageScheduler {
 		public InvertedPageTable() {
 			int length = Machine.processor().getNumPhysPages();
 			coreMapPID = new int[length];
+			Arrays.fill(coreMapPID, -1);
 			coreMapVPN = new int[length];
+			Arrays.fill(coreMapVPN, -1);
 			coreMapEntry = new TranslationEntry[length];
 			mapping = new HashMap<Pair, Integer>();
 		}

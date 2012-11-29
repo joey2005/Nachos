@@ -9,23 +9,26 @@ import nachos.machine.TranslationEntry;
 public class TLBScheduler {
 	
 	public TLBScheduler() {
-		randgen = new Random();
-		tlbsize = Machine.processor().getTLBSize();
+
 	}
 	
 	public void init() {
-
+		tlbsize = Machine.processor().getTLBSize();
+		lru = new long[tlbsize];
+		for (int i = 0; i < tlbsize; ++i) {
+			lru[i] = Machine.timer().getTime();
+		}
 	}
 	
 	// clear TLB Entry
 	public void clear(int processID, int vpn) {
 		boolean intStatus = Machine.interrupt().disable();
+		TranslationEntry newEntry = new TranslationEntry();
+		newEntry.valid = false;
 		for (int i = 0; i < tlbsize; ++i) {
 			TranslationEntry entry = Machine.processor().readTLBEntry(i);
 			if (entry.vpn == vpn) {
 				writeBackTLBEntry(processID, i);
-				TranslationEntry newEntry = new TranslationEntry(entry);
-				newEntry.valid = false;
 				writeTLBEntry(i, newEntry);
 			}
 		}
@@ -34,10 +37,10 @@ public class TLBScheduler {
 	
 	public void clearTLB(int processID) {
 		boolean intStatus = Machine.interrupt().disable();
+		TranslationEntry newEntry = new TranslationEntry();
+		newEntry.valid = false;
 		for (int i = 0; i < tlbsize; ++i) {
 			writeBackTLBEntry(processID, i);
-			TranslationEntry newEntry = new TranslationEntry(Machine.processor().readTLBEntry(i));
-			newEntry.valid = false;
 			writeTLBEntry(i, newEntry);
 		}
 		Machine.interrupt().setStatus(intStatus);
@@ -55,6 +58,7 @@ public class TLBScheduler {
 	public void writeTLBEntry(int at, TranslationEntry entry) {
 		boolean intStatus = Machine.interrupt().disable();
 		Machine.processor().writeTLBEntry(at, entry);
+		setTime(at);
 		Machine.interrupt().setStatus(intStatus);
 	}
 	
@@ -89,22 +93,33 @@ public class TLBScheduler {
 		}
 		
 		addTLBEntry(processID, entry);
+		/*
+		System.err.println("======");
+		for (int i = 0; i < tlbsize; ++i) {
+			System.err.println(Machine.processor().readTLBEntry(i).vpn + " " + Machine.processor().readTLBEntry(i).valid);
+		}*/
 		
 		return true;
 	}
 	
 	public static int tlbsize;
 	
-	// Randomized
-	private static Random randgen;
+	// least recently used
+	private long[] lru;
 
 	private int getVictim() {
-		for (int i = 0; i < tlbsize; ++i) {
-			TranslationEntry entry = Machine.processor().readTLBEntry(i);
-			if (entry.used) {
-				return i;
+		long time = lru[0];
+		int at = 0;
+		for (int i = 1; i < tlbsize; ++i) {
+			if (lru[i] < time) {
+				time = lru[i];
+				at = i;
 			}
 		}
-		return randgen.nextInt(tlbsize);
+		return at;
+	}
+	
+	private void setTime(int at) {
+		lru[at] = Machine.timer().getTime();
 	}
 }

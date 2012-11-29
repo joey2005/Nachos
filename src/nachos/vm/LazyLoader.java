@@ -1,3 +1,4 @@
+//Phase 3
 package nachos.vm;
 
 import nachos.machine.Coff;
@@ -33,16 +34,17 @@ public class LazyLoader {
 			}
 		}
 	}
-	
-	public boolean isCodeSection(int vpn) {
-		return vpn >= 0 && vpn < numPages;
-	}
-	
+
 	public TranslationEntry loadSection(int vpn, int ppn) {
-		System.err.println(vpn + " " + ppn + " " + pageSectionNum.length);
-		CoffSection section = coff.getSection(pageSectionNum[vpn]);
-		TranslationEntry entry = new TranslationEntry(vpn, ppn, true, section.isReadOnly(), false, false);
-		section.loadPage(pageSectionOffset[vpn], ppn);
+		//System.err.println(vpn + " " + ppn + " " + pageSectionNum.length);
+		TranslationEntry entry;
+		if (vpn >= 0 && vpn < numPages) {
+			CoffSection section = coff.getSection(pageSectionNum[vpn]);
+			entry = new TranslationEntry(vpn, ppn, true, section.isReadOnly(), false, false);
+			section.loadPage(pageSectionOffset[vpn], ppn);
+		} else {
+			entry = new TranslationEntry(vpn, ppn, true, false, false, false); 
+		}
 		return entry;
 	}
 	

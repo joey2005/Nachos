@@ -17,7 +17,7 @@ public class SwapFile {
 	}
 	
 	public SwapFile(String name) {
-		filename = name;
+		filename = name == null ? "NachosDiskFile" : name;
 		mapping = new HashMap<Pair, TranslationEntry>();
 		usedPage = new HashMap<Pair, Integer>();
 		freePage = new LinkedList<Integer>(); 
@@ -33,7 +33,7 @@ public class SwapFile {
 		Pair[] keys = new Pair[1];
 		keys = usedPage.keySet().toArray(keys);
 		for (int i = 0; i < keys.length; ++i) {//(pid, vpn)
-			if (keys[i].first == processID) {
+			if (keys[i] != null && keys[i].first == processID) {
 				mapping.remove(keys[i]);
 				freePage.add(usedPage.remove(keys[i]));
 			}
@@ -53,21 +53,23 @@ public class SwapFile {
 		int page = usedPage.containsKey(p) ? usedPage.get(p) : allocate();
 		mapping.put(p, entry);
 		usedPage.put(p, new Integer(page));
-		return swapFile.write(calcOffset(page), Machine.processor().getMemory(), Processor.makeAddress(page, 0), pagesize);
+		return swapFile.write(calcOffset(page), Machine.processor().getMemory(), Processor.makeAddress(entry.ppn, 0), pagesize);
 	}
 	
 	public TranslationEntry swapToMemory(int processID, int vpn, int ppn) {
 		Pair p = new Pair(processID, vpn);
+		//System.err.println(mapping.size());
 		if (!mapping.containsKey(p)) {
 			return null;
 		}
 		int page = usedPage.get(p);
-		int readLen = swapFile.read(calcOffset(page), Machine.processor().getMemory(), Processor.makeAddress(page, 0), pagesize);
+		int readLen = swapFile.read(calcOffset(page), Machine.processor().getMemory(), Processor.makeAddress(ppn, 0), pagesize);
 		if (readLen < pagesize) {
 			return null;
 		}
 		TranslationEntry entry = mapping.get(p);
 		entry.ppn = ppn;
+		entry.valid = true;
 		entry.dirty = false;
 		entry.used = false;
 		return entry;

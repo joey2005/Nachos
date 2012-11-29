@@ -1,5 +1,6 @@
 package nachos.vm;
 
+import nachos.machine.Lib;
 import nachos.machine.Machine;
 import nachos.machine.Processor;
 import nachos.machine.TranslationEntry;
