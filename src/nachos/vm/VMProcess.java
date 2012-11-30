@@ -33,6 +33,10 @@ public class VMProcess extends UserProcess {
 
 	}
 	
+	public static VMProcess newUserProcess() {
+		return (VMProcess) Lib.constructObject(Machine.getProcessClassName());
+	}
+	
 	public TranslationEntry getPP(int vpn, boolean writeBit) {
 		TranslationEntry entry = VMKernel.pageScheduler.getPageEntry(loader, processID, vpn);
 		if (entry == null || entry.readOnly && writeBit) {

@@ -796,8 +796,7 @@ public class UserProcess {
 			}
 		}
 		
-		//UserProcess child = new UserProcess();
-		UserProcess child = new VMProcess();
+		UserProcess child = newUserProcess();
 		childProcess.put(new Integer(child.processID), child);
 
 		if (!child.execute(name, args)) {//exit on error
@@ -844,28 +843,28 @@ public class UserProcess {
 	public int handleSyscall(int syscall, int a0, int a1, int a2, int a3) {
 		switch (syscall) {
 		case syscallHalt: {
-			System.err.println(this.processID + " " + "syscallHalt");
+			//System.err.println(this.processID + " " + "syscallHalt");
 			return handleHalt();
 		}
 		//Phase 2 Task 1: 
 		case syscallCreate: {
-			System.err.println(this.processID + " " + "syscallCreate");
+			//System.err.println(this.processID + " " + "syscallCreate");
 			return handleCreate(a0);
 		}
 		case syscallOpen: {
-			System.err.println(this.processID + " " + "syscallOpen");
+			//System.err.println(this.processID + " " + "syscallOpen");
 			return handleOpen(a0);
 		}
 		case syscallRead: {
-			System.err.println(this.processID + " " + "syscallRead");
+			//System.err.println(this.processID + " " + "syscallRead");
 			return handleRead(a0, a1, a2);
 		}
 		case syscallWrite: {
-			System.err.println(this.processID + " " + "syscallWrite");
+			//System.err.println(this.processID + " " + "syscallWrite");
 			return handleWrite(a0, a1, a2);
 		}
 		case syscallClose: {
-			System.err.println(this.processID + " " + "syscallClose");
+			//System.err.println(this.processID + " " + "syscallClose");
 			return handleClose(a0);
 		}
 		case syscallUnlink: {
@@ -874,15 +873,15 @@ public class UserProcess {
 		}
 		//Phase 2 Task 3:
 		case syscallExit: {
-			System.err.println(this.processID + " " + "syscallExit");
+			//System.err.println(this.processID + " " + "syscallExit");
 			return handleExit(a0);
 		}
 		case syscallExec: {
-			System.err.println(this.processID + " " + "syscallExec");
+			//System.err.println(this.processID + " " + "syscallExec");
 			return handleExec(a0, a1, a2);
 		}
 		case syscallJoin: {
-			System.err.println(this.processID + " " + "syscallJoin");
+			//System.err.println(this.processID + " " + "syscallJoin");
 			return handleJoin(a0, a1);
 		}
 			

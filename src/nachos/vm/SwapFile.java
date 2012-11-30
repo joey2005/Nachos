@@ -3,21 +3,18 @@ package nachos.vm;
 import java.util.HashMap;
 import java.util.LinkedList;
 
+import nachos.machine.Config;
 import nachos.machine.Machine;
 import nachos.machine.OpenFile;
 import nachos.machine.Processor;
 import nachos.machine.TranslationEntry;
 
 public class SwapFile {
+
 	public SwapFile() {
-		filename = "SWAP";
-		mapping = new HashMap<Pair, TranslationEntry>();
-		usedPage = new HashMap<Pair, Integer>();
-		freePage = new LinkedList<Integer>(); 
-	}
-	
-	public SwapFile(String name) {
-		filename = name == null ? "SWAP" : name;
+		if ((filename = Config.getString("swapFile")) == null) {
+			filename = "SWAP";
+		}
 		mapping = new HashMap<Pair, TranslationEntry>();
 		usedPage = new HashMap<Pair, Integer>();
 		freePage = new LinkedList<Integer>(); 

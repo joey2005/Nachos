@@ -16,7 +16,7 @@ import nachos.threads.Lock;
 
 public class PageScheduler {
 	public PageScheduler() {
-		swapFile = new SwapFile(Config.getString("swapFile"));
+		swapFile = new SwapFile();
 		pageTable = new InvertedPageTable();
 	}
 

@@ -15,8 +15,10 @@ public class TLBScheduler {
 	public void init() {
 		tlbsize = Machine.processor().getTLBSize();
 		lru = new long[tlbsize];
+		pid = new int[tlbsize];
 		for (int i = 0; i < tlbsize; ++i) {
 			lru[i] = Machine.timer().getTime();
+			pid[i] = -1;
 		}
 	}
 	
@@ -27,7 +29,7 @@ public class TLBScheduler {
 		newEntry.valid = false;
 		for (int i = 0; i < tlbsize; ++i) {
 			TranslationEntry entry = Machine.processor().readTLBEntry(i);
-			if (entry.vpn == vpn) {
+			if (pid[i] == processID && entry.vpn == vpn) {
 				writeBackTLBEntry(processID, i);
 				writeTLBEntry(i, newEntry);
 			}
@@ -52,20 +54,15 @@ public class TLBScheduler {
 		writeBackTLBEntry(processID, at);
 		writePageEntry(processID, entry);
 		writeTLBEntry(at, entry);
+		pid[at] = processID;
+		lru[at] = Machine.timer().getTime();
 		Machine.interrupt().setStatus(intStatus);
 	}
 
 	public void writeTLBEntry(int at, TranslationEntry entry) {
 		boolean intStatus = Machine.interrupt().disable();
 		Machine.processor().writeTLBEntry(at, entry);
-		setTime(at);
 		Machine.interrupt().setStatus(intStatus);
-	}
-	
-	public void writeBackTLB(int processID) {
-		for (int i = 0; i < tlbsize; ++i) {
-			writeBackTLBEntry(processID, i);
-		}
 	}
 	
 	public void writeBackTLBEntry(int processID, int at) {
@@ -104,6 +101,7 @@ public class TLBScheduler {
 	
 	public static int tlbsize;
 	
+	private int[] pid;
 	// least recently used
 	private long[] lru;
 
@@ -118,8 +116,5 @@ public class TLBScheduler {
 		}
 		return at;
 	}
-	
-	private void setTime(int at) {
-		lru[at] = Machine.timer().getTime();
-	}
+
 }
