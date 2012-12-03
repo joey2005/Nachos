@@ -1,9 +1,13 @@
 //Phase 3
 package nachos.vm;
 
+import java.util.Arrays;
+
 import nachos.machine.Coff;
 import nachos.machine.CoffSection;
 import nachos.machine.Lib;
+import nachos.machine.Machine;
+import nachos.machine.Processor;
 import nachos.machine.TranslationEntry;
 
 public class LazyLoader {
@@ -44,6 +48,9 @@ public class LazyLoader {
 			section.loadPage(pageSectionOffset[vpn], ppn);
 		} else {
 			entry = new TranslationEntry(vpn, ppn, true, false, false, false); 
+			//byte[] buf = new byte[Processor.pageSize];
+			//Arrays.fill(buf, (byte)0);
+			//System.arraycopy(buf, 0, Machine.processor().getMemory(), Processor.makeAddress(ppn, 0), Processor.pageSize);
 		}
 		return entry;
 	}

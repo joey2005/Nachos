@@ -15,3 +15,6 @@
 
 2012.11.29 18:28
     cannot fix with non-dirty pages write back problems.....
+
+2012.12.03 18:49
+    bye bye, nachos, may this be the finale

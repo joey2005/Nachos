@@ -83,7 +83,7 @@ public class PageScheduler {
 		}
 		TranslationEntry entry = pageTable.getTranslationEntry(tmpppn);
 		//check if dirty
-		if (entry != null && entry.dirty) {
+		if (entry != null) {
 			swapFile.swapToFile(tmppid, tmpvpn, entry);
 		}
 		pageTable.removePage(tmppid, tmpvpn);

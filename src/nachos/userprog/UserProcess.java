@@ -152,15 +152,12 @@ public class UserProcess {
 
 		byte[] memory = Machine.processor().getMemory();
 
-		// Virtual address [vaddr, vaddrEnd)
-		int vaddrEnd = vaddr + length - 1;
 		// virtual address in that start virtual page
 		int startVAddr = Processor.offsetFromAddress(vaddr);
 		// Virtual Page num intervals [VPNStart, VPNEnd]
 		int VPNStart = Processor.pageFromAddress(vaddr);
-		int VPNEnd = Processor.pageFromAddress(vaddrEnd);
 		int amount = 0;
-		for (int vpn = VPNStart; vpn <= VPNEnd; ++vpn) {
+		for (int vpn = VPNStart; length > 0; ++vpn) {
 			// do copy
 			int len = Math.min(length - amount, pageSize - startVAddr);
 			TranslationEntry PP = getPP(vpn, false);
@@ -170,6 +167,7 @@ public class UserProcess {
 			System.arraycopy(memory, Processor.makeAddress(PP.ppn, startVAddr), data, offset, len);
 			offset += len;
 			amount += len;
+			length -= len;
 			
 			//clear start virtual address
 			startVAddr = 0;
@@ -217,15 +215,12 @@ public class UserProcess {
 
 		byte[] memory = Machine.processor().getMemory();
 
-		// Virtual address [vaddr, vaddrEnd)
-		int vaddrEnd = vaddr + length - 1;
 		// virtual address in that start virtual page
 		int startVAddr = Processor.offsetFromAddress(vaddr);
 		// Virtual Page num intervals [VPNStart, VPNEnd]
 		int VPNStart = Processor.pageFromAddress(vaddr);
-		int VPNEnd = Processor.pageFromAddress(vaddrEnd);
 		int amount = 0;
-		for (int vpn = VPNStart; vpn <= VPNEnd; ++vpn) {
+		for (int vpn = VPNStart; length > 0; ++vpn) {
 			// do copy
 			int len = Math.min(length - amount, pageSize - startVAddr);
 			//System.err.println(this.getClass());
@@ -237,6 +232,7 @@ public class UserProcess {
 			System.arraycopy(data, offset, memory, Processor.makeAddress(PP.ppn, startVAddr), len);
 			offset += len;
 			amount += len;
+			length -= len;
 			
 			//clear start virtual address
 			startVAddr = 0;
@@ -784,9 +780,11 @@ public class UserProcess {
 		
 		final int length = argc * 4;
 		byte[] tmp = new byte[length];
+
 		if (readVirtualMemory(argvPos, tmp, 0, length) < length) {
 			return -1;
 		}
+
 		String[] args = new String[argc];
 		for (int i = 0; i < argc; ++i) {
 			int pos = Lib.bytesToInt(tmp, i * 4, 4);
@@ -843,28 +841,28 @@ public class UserProcess {
 	public int handleSyscall(int syscall, int a0, int a1, int a2, int a3) {
 		switch (syscall) {
 		case syscallHalt: {
-			//System.err.println(this.processID + " " + "syscallHalt");
+			System.err.println(this.processID + " " + "syscallHalt");
 			return handleHalt();
 		}
 		//Phase 2 Task 1: 
 		case syscallCreate: {
-			//System.err.println(this.processID + " " + "syscallCreate");
+			System.err.println(this.processID + " " + "syscallCreate");
 			return handleCreate(a0);
 		}
 		case syscallOpen: {
-			//System.err.println(this.processID + " " + "syscallOpen");
+			System.err.println(this.processID + " " + "syscallOpen");
 			return handleOpen(a0);
 		}
 		case syscallRead: {
-			//System.err.println(this.processID + " " + "syscallRead");
+			System.err.println(this.processID + " " + "syscallRead");
 			return handleRead(a0, a1, a2);
 		}
 		case syscallWrite: {
-			//System.err.println(this.processID + " " + "syscallWrite");
+			System.err.println(this.processID + " " + "syscallWrite");
 			return handleWrite(a0, a1, a2);
 		}
 		case syscallClose: {
-			//System.err.println(this.processID + " " + "syscallClose");
+			System.err.println(this.processID + " " + "syscallClose");
 			return handleClose(a0);
 		}
 		case syscallUnlink: {
@@ -873,15 +871,15 @@ public class UserProcess {
 		}
 		//Phase 2 Task 3:
 		case syscallExit: {
-			//System.err.println(this.processID + " " + "syscallExit");
+			System.err.println(this.processID + " " + "syscallExit");
 			return handleExit(a0);
 		}
 		case syscallExec: {
-			//System.err.println(this.processID + " " + "syscallExec");
+			System.err.println(this.processID + " " + "syscallExec");
 			return handleExec(a0, a1, a2);
 		}
 		case syscallJoin: {
-			//System.err.println(this.processID + " " + "syscallJoin");
+			System.err.println(this.processID + " " + "syscallJoin");
 			return handleJoin(a0, a1);
 		}
 			
