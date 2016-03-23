@@ -8,8 +8,8 @@
 Cache, Memory, Disks
 
 ##Phase 4. Networking 
-no implementation yet
+not implemented yet
 
 ##Phase 5. Filesystems 
-no implementation yet
+not implemented yet
 
