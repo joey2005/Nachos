@@ -1,15 +1,19 @@
-#This is Nachos Project for Operating System Class.
+#README
 
-##Phase 1. Multi Threads
+##What is this for?
 
-##Phase 2. Multi Processes
+###1. Thread
 
-##Phase 3. Storage Mangement
-Cache, Memory, Disks
+###2. Process
 
-##Phase 4. Networking 
+###3. Storage
+- cache
+- memory
+- harddisk
+
+###4. Network
 not implemented yet
 
-##Phase 5. Filesystems 
+###5. Filesystem
 not implemented yet
 
